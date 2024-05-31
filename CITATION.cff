@@ -8,7 +8,7 @@ version: 1.0.0
 date-released: 2024-05-31
 url: "https://github.com/jeappen/idp-offline-rl"
 preferred-citation:
-  type: inproceedings
+  type: conference-paper
   authors:
   - family-names: "Koppel"
     given-names: "Alec"
@@ -22,6 +22,6 @@ preferred-citation:
     given-names: "Mengdi"
   - family-names: "Ganesh"
     given-names: "Sumitra"
-  booktitle: "Forty-first International Conference on Machine Learning"
+  collection-title: "Proceedings of the 41st International Conference on Machine Learning (ICML)"
   title: "Information-Directed Pessimism for Offline Reinforcement Learning"
   year: 2024

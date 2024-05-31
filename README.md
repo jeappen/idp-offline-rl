@@ -37,8 +37,8 @@ python -m ipykernel install --user --name offrl --display-name "Python (offrl)"
 ├── tests                   # Test files
 │   ├── lcb                 # Basic functionality tests for paper algos
 │   .
-├── d3rlpy                  # Test files (alternatively `spec` or `tests`)
-│   ├── lcb                 # Code for the paper algorithms
+├── d3rlpy                  # All source files for d3rlpy (with some minor edits)
+│   ├── lcb                 # Our code for the paper algorithms
 │   .
 ├── tutorials               # Scripts and notebooks (front-end)
 │   ├── run_*.py            # Scripts with options to choose data type for each environment
