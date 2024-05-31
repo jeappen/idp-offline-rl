@@ -1,13 +1,20 @@
-torch==1.6.0
+torch==2.0.1
 scikit-learn==0.23.1
 tensorboardX==2.0
-tqdm==4.47.0
+tqdm>=4.66.0
 h5py==2.10.0
-gym==0.17.2
-Cython==0.29.21
+gym==0.23.1
 stable-baselines3>=0.10.0
 click==8.0.1
 typing-extensions==3.7.4.3
-scipy==1.5.4
+scipy~=1.10.1
 structlog==20.2.0
 colorama==0.4.4
+numpy==1.21.0
+stein-thinning @ git+https://github.com/wilson-ye-chen/stein_thinning@e197e413b5548f5b11653f78c6a4e8ba340e0849
+gymnasium
+pickle5
+protobuf==3.20.3
+pymdptoolbox
+pygame
+pyvirtualdisplay

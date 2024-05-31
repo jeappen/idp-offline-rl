@@ -49,6 +49,7 @@ def _to_episodes(
     rewards,
     terminals,
     episode_terminals,
+    next_observations=None,
 ):
     rets = []
     head_index = 0
@@ -61,6 +62,7 @@ def _to_episodes(
                 actions=actions[head_index:i + 1],
                 rewards=rewards[head_index:i + 1],
                 terminal=terminals[i],
+                last_observation=next_observations[i] if next_observations is not None else None # For last transition
             )
             rets.append(episode)
             head_index = i + 1
@@ -74,6 +76,7 @@ def _to_transitions(
     actions,
     rewards,
     terminal,
+    last_observation=None,
 ):
     rets = []
     num_data = _safe_size(observations)
@@ -85,8 +88,12 @@ def _to_transitions(
 
         if i == num_data - 1:
             if terminal:
-                # dummy observation
-                next_observation = np.zeros_like(observation)
+                if last_observation is not None:
+                    # Use the last observation if available
+                    next_observation = last_observation
+                else:
+                    # dummy observation
+                    next_observation = np.zeros_like(observation)
             else:
                 # skip the last step if not terminated
                 break
@@ -179,6 +186,8 @@ class MDPDataset:
         discrete_action (bool): flag to use the given actions as discrete
             action-space actions. If ``None``, the action type is automatically
             determined.
+        next_observations (numpy.ndarray): N-D array. If specified, allows the last
+            transition to have a valid next observation.
 
     """
     def __init__(
@@ -189,6 +198,7 @@ class MDPDataset:
         terminals,
         episode_terminals=None,
         discrete_action=None,
+        next_observations=None,
     ):
         # validation
         assert isinstance(observations, np.ndarray),\
@@ -228,6 +238,8 @@ class MDPDataset:
             self._actions = np.asarray(actions, dtype=np.float32)
 
         self._episodes = None
+        # Addition to fix last transition of each episode
+        self._next_observations = next_observations
 
     @property
     def observations(self):
@@ -278,6 +290,16 @@ class MDPDataset:
 
         """
         return self._episode_terminals
+
+    @property
+    def next_observations(self):
+        """ Returns the next_observations.
+
+        Returns:
+            numpy.ndarray: array of observations.
+
+        """
+        return self._next_observations
 
     @property
     def episodes(self):
@@ -427,7 +449,8 @@ class MDPDataset:
         actions,
         rewards,
         terminals,
-        episode_terminals=None
+        episode_terminals=None,
+        next_observations=None
     ):
         """ Appends new data.
 
@@ -452,6 +475,11 @@ class MDPDataset:
                 assert action.shape == (self.get_action_size(), ),\
                     f'Action size must be {self.get_action_size()}.'
 
+        if next_observations is not None:
+            assert self._next_observations is not None,\
+                'New dataset cannot have next observations when the current dataset is not ' \
+                'initialized with next_observations.'
+
         # append observations
         self._observations = np.vstack([self._observations, observations])
 
@@ -469,7 +497,10 @@ class MDPDataset:
         self._episode_terminals = np.hstack(
             [self._episode_terminals, episode_terminals]
         )
-
+        if next_observations is not None:
+            self._next_observations = np.vstack(
+                [self._next_observations, next_observations]
+            )
 
         # convert new data to list of episodes
         episodes = _to_episodes(
@@ -480,6 +511,7 @@ class MDPDataset:
             rewards=self._rewards,
             terminals=self._terminals,
             episode_terminals=self._episode_terminals,
+            next_observations=self._next_observations,
         )
 
         self._episodes = episodes
@@ -501,7 +533,8 @@ class MDPDataset:
             dataset.actions,
             dataset.rewards,
             dataset.terminals,
-            dataset.episode_terminals
+            dataset.episode_terminals,
+            dataset.next_observations,
         )
 
     def dump(self, fname):
@@ -518,6 +551,8 @@ class MDPDataset:
             f.create_dataset('terminals', data=self._terminals)
             f.create_dataset('episode_terminals', data=self._episode_terminals)
             f.create_dataset('discrete_action', data=self.discrete_action)
+            # next_observations can be None, but not allowed to save None to HDF5.
+            f.create_dataset('next_observations', data=[] if self._next_observations is None else self._next_observations)
             f.create_dataset('version', data='1.0')
             f.flush()
 
@@ -551,6 +586,13 @@ class MDPDataset:
             rewards = f['rewards'][()]
             terminals = f['terminals'][()]
             discrete_action = f['discrete_action'][()]
+            # Setup next_observations if it exists
+            if 'next_observations' in f:
+                next_observations = f['next_observations'][()]
+                if len(next_observations) == 0:
+                    next_observations = None
+            else:
+                next_observations = None
 
             # for backward compatibility
             if 'episode_terminals' in f:
@@ -568,6 +610,7 @@ class MDPDataset:
             terminals=terminals,
             episode_terminals=episode_terminals,
             discrete_action=discrete_action,
+            next_observations=next_observations,
         )
 
         return dataset
@@ -587,6 +630,7 @@ class MDPDataset:
             rewards=self._rewards,
             terminals=self._terminals,
             episode_terminals=self._episode_terminals,
+            next_observations=self._next_observations,
         )
 
     def __len__(self):
@@ -639,6 +683,7 @@ class Episode:
         actions,
         rewards,
         terminal=True,
+        last_observation=None,
     ):
         # validation
         assert isinstance(observations, np.ndarray),\
@@ -663,6 +708,7 @@ class Episode:
         self._rewards = np.asarray(rewards, dtype=np.float32)
         self._terminal = terminal
         self._transitions = None
+        self._last_observation = last_observation
 
     @property
     def observations(self):
@@ -731,6 +777,7 @@ class Episode:
             actions=self._actions,
             rewards=self._rewards,
             terminal=self._terminal,
+            last_observation=self._last_observation,
         )
 
     def size(self):

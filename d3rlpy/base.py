@@ -130,7 +130,6 @@ def _deseriealize_params(params: Dict[str, Any]) -> Dict[str, Any]:
 
 @pretty_repr
 class LearnableBase:
-
     _batch_size: int
     _n_frames: int
     _n_steps: int
@@ -173,6 +172,7 @@ class LearnableBase:
         self._eval_results = defaultdict(list)
         self._loss_history = defaultdict(list)
         self._active_logger = None
+        self._saved_logdir = None  # For saving output of logger
         self._grad_step = 0
 
         if kwargs and len(kwargs.keys()) > 0:
@@ -675,6 +675,8 @@ class LearnableBase:
 
         # drop reference to active logger since out of fit there is no active
         # logger
+        # Save the logdir to use data later
+        self._saved_logdir = self._active_logger._logdir
         self._active_logger.close()
         self._active_logger = None
 
